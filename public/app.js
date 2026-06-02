@@ -2113,3 +2113,168 @@ async function initSetupScreen() {
   saveBtn.addEventListener('click', doSave);
   tokenInput.addEventListener('keydown', e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) doSave(); });
 }
+
+// ── SEARCH TAB ─────────────────────────────────────────────────────────────────
+
+function initSearchTab() {
+  const input       = document.getElementById('search-freq-input');
+  const freqLoading = document.getElementById('search-freq-loading');
+  const freqEmpty   = document.getElementById('search-freq-empty');
+  const freqList    = document.getElementById('search-freq-list');
+  const labelWrap   = document.getElementById('search-freq-label-wrap');
+  const ownCheck    = document.getElementById('search-own-check');
+  const detailEmpty = document.getElementById('search-detail-empty');
+  const detailContent = document.getElementById('search-detail-content');
+  const detailHeader  = document.getElementById('search-detail-header');
+  const detailQuery   = document.getElementById('search-detail-query');
+  const detailFreq    = document.getElementById('search-detail-freq');
+  const detailProducts = document.getElementById('search-detail-products');
+  const detailLoading = document.getElementById('search-detail-loading');
+
+  if (!input) return;
+
+  let searchTimer = null;
+  let currentQuery = '';
+  let showOwnOnly = false;
+
+  // Интервальные кнопки (декоративные — для будущего расширения с аналитикой)
+  document.querySelectorAll('.search-interval-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.search-interval-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
+
+  // Чекбокс "Свои товары"
+  if (ownCheck) {
+    ownCheck.addEventListener('change', () => {
+      showOwnOnly = ownCheck.checked;
+      if (currentQuery) loadSearchResults(currentQuery);
+    });
+  }
+
+  // Поиск при вводе с debounce 600ms
+  input.addEventListener('input', () => {
+    clearTimeout(searchTimer);
+    const q = input.value.trim();
+    if (q.length < 2) {
+      showState('empty');
+      return;
+    }
+    searchTimer = setTimeout(() => fetchSuggests(q), 600);
+  });
+
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      clearTimeout(searchTimer);
+      const q = input.value.trim();
+      if (q.length >= 2) fetchSuggests(q);
+    }
+  });
+
+  function showState(state) {
+    freqLoading.classList.toggle('hidden', state !== 'loading');
+    freqEmpty.classList.toggle('hidden', state !== 'empty');
+    freqList.classList.toggle('hidden', state !== 'list');
+    if (labelWrap) labelWrap.classList.toggle('hidden', state !== 'list');
+  }
+
+  async function fetchSuggests(q) {
+    showState('loading');
+    try {
+      const data = await fetch('/api/wb-suggest?q=' + encodeURIComponent(q)).then(r => r.json());
+      const suggests = data.suggests || [q];
+      renderSuggests(suggests);
+    } catch(e) {
+      renderSuggests([q]);
+    }
+  }
+
+  function renderSuggests(suggests) {
+    showState('list');
+    freqList.innerHTML = '';
+    suggests.forEach((s, i) => {
+      const item = document.createElement('div');
+      item.className = 'search-freq-item';
+      item.innerHTML = `
+        <span class="search-freq-rank">${i + 1}</span>
+        <span class="search-freq-text">${esc(s)}</span>
+        <span class="search-freq-num search-search-icon">🔍</span>
+      `;
+      item.addEventListener('click', () => {
+        document.querySelectorAll('.search-freq-item').forEach(el => el.classList.remove('active'));
+        item.classList.add('active');
+        currentQuery = s;
+        loadSearchResults(s);
+      });
+      freqList.appendChild(item);
+    });
+  }
+
+  async function loadSearchResults(q) {
+    detailEmpty.classList.add('hidden');
+    detailContent.classList.add('hidden');
+    if (detailLoading) detailLoading.classList.remove('hidden');
+
+    try {
+      const data = await fetch('/api/wb-search?q=' + encodeURIComponent(q)).then(r => r.json());
+
+      if (detailLoading) detailLoading.classList.add('hidden');
+      detailContent.classList.remove('hidden');
+
+      if (detailQuery) detailQuery.textContent = '"' + q + '"';
+      const totalText = data.total ? `~${data.total.toLocaleString('ru')} товаров` : '';
+      const cachedText = data.stale ? ' (устар. кэш)' : data.cached ? ' (кэш)' : '';
+      if (detailFreq) detailFreq.textContent = totalText + cachedText;
+
+      renderSearchProducts(data.products || [], q);
+    } catch(e) {
+      if (detailLoading) detailLoading.classList.add('hidden');
+      detailEmpty.classList.remove('hidden');
+      const icon = detailEmpty.querySelector('.search-empty-icon');
+      if (icon) icon.textContent = '❌';
+      const p = detailEmpty.querySelector('p');
+      if (p) p.textContent = e.message || 'Ошибка загрузки';
+    }
+  }
+
+  function renderSearchProducts(products, query) {
+    if (!detailProducts) return;
+
+    // Набор nmId своих товаров
+    const ownIds = new Set((allCards || []).map(c => c.nmId));
+
+    let filtered = products;
+    if (showOwnOnly) filtered = products.filter(p => ownIds.has(p.id));
+
+    if (!filtered.length) {
+      detailProducts.innerHTML = '<div class="search-no-results">' +
+        (showOwnOnly ? 'Твоих товаров в этой выдаче нет в топ-100' : 'Нет результатов') +
+        '</div>';
+      return;
+    }
+
+    detailProducts.innerHTML = filtered.map(p => {
+      const isOwn = ownIds.has(p.id);
+      const ownCard = isOwn ? (allCards || []).find(c => c.nmId === p.id) : null;
+      const ownName = ownCard ? (ownCard.customName || ownCard.title || '') : '';
+
+      const posClass = p.pos <= 10 ? 'pos-top10' : p.pos <= 30 ? 'pos-top30' : p.pos <= 100 ? 'pos-top100' : 'pos-far';
+
+      return `
+<div class="search-product-card ${isOwn ? 'own-product' : ''}">
+  <div class="search-product-pos">
+    <span class="pos-badge ${posClass}">#${p.pos}</span>
+  </div>
+  <img class="search-product-photo" src="${esc(p.photo)}" alt="" loading="lazy" onerror="this.style.opacity='.3'">
+  <div class="search-product-info">
+    <div class="search-product-name">
+      ${isOwn ? '<span class="own-badge">⭐ МОЙ</span> ' : ''}${esc(ownName || p.name)}
+    </div>
+    <div class="search-product-meta">${esc(p.brand)} · ★ ${p.rating.toFixed(1)} · ${p.feedbacks.toLocaleString('ru')} отзывов</div>
+  </div>
+  <div class="search-product-price">${p.price.toLocaleString('ru')} ₽</div>
+</div>`;
+    }).join('');
+  }
+}

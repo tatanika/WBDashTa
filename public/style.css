@@ -2358,3 +2358,43 @@ td {
   padding: 1px 5px;
   font-size: 10px;
 }
+
+/* ── SEARCH TAB дополнения ──────────────────────────────────────────────────── */
+.search-freq-rank {
+  font-size: 11px;
+  color: var(--muted);
+  min-width: 20px;
+  text-align: right;
+  flex-shrink: 0;
+}
+.search-search-icon {
+  font-size: 13px;
+  opacity: .5;
+}
+.own-badge {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--accent2);
+  background: rgba(124,58,237,.15);
+  border: 1px solid rgba(124,58,237,.3);
+  border-radius: 4px;
+  padding: 1px 5px;
+  margin-right: 4px;
+}
+#search-detail-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 40px 20px;
+  color: var(--muted);
+  font-size: 13px;
+}
+#search-detail-header {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+}

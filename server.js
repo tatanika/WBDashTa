@@ -1,4 +1,4 @@
-'use strict';
+﻿'use strict';
 const express = require('express');
 const fetch = require('node-fetch');
 const path = require('path');
@@ -943,6 +943,76 @@ app.get('/api/wb-prices', async (req, res) => {
     res.status(502).json({ error: e.message });
   } finally { clearTimeout(timer); }
 });
+
+// ─── WB SEARCH PROXY (через browser_search.js + CDP) ─────────────────────────
+// catalog.wb.ru и search.wb.ru без браузерных куки возвращают 403/429.
+// Используем существующую CDP-инфраструктуру (тот же браузер что и для позиций).
+const { searchPosition, isBrowserAvailable, launchBrowser: launchSearchBrowser } = require('./browser_search');
+
+const searchCache = new Map();  // key → { ts, data }
+const SEARCH_TTL  = 20 * 60 * 1000;  // 20 минут
+
+// GET /api/wb-search?q=запрос&page=1
+app.get('/api/wb-search', async (req, res) => {
+  const q    = (req.query.q || '').trim();
+  const page = Math.max(1, parseInt(req.query.page) || 1);
+  if (!q) return res.status(400).json({ error: 'q required' });
+
+  const cacheKey = `${q}|${page}`;
+  const cached = searchCache.get(cacheKey);
+  if (cached && Date.now() - cached.ts < SEARCH_TTL) {
+    return res.json({ ...cached.data, cached: true });
+  }
+
+  // Запускаем браузер если ещё не запущен
+  if (!await isBrowserAvailable()) {
+    launchSearchBrowser().catch(() => {});
+    // Подождём немного
+    await new Promise(r => setTimeout(r, 4000));
+  }
+
+  try {
+    const result = await searchPosition(q, 0, page);   // nmId=0 → все товары
+
+    if (result.rateLimited) {
+      if (cached) return res.json({ ...cached.data, cached: true, stale: true });
+      return res.status(429).json({ error: 'WB rate limit — попробуй через минуту' });
+    }
+
+    const data = {
+      query: q,
+      page,
+      total: result.totalResults || result.products?.length || 0,
+      products: (result.products || []).map(p => ({
+        pos:       p._position,
+        id:        p.id,
+        name:      p.name || '',
+        brand:     p.brand || '',
+        price:     Math.round((p.salePriceU || p.priceU || 0) / 100),
+        rating:    p.reviewRating || 0,
+        feedbacks: p.feedbacks || 0,
+        supplierId: p.supplierId,
+        photo:     `https://basket-${String((Math.floor(p.id/100000) % 34) + 1).padStart(2,'0')}.wbbasket.ru/vol${Math.floor(p.id/100000)}/part${Math.floor(p.id/1000)}/${p.id}/images/c246x328/1.webp`,
+      })),
+    };
+    searchCache.set(cacheKey, { ts: Date.now(), data });
+    res.json(data);
+  } catch(e) {
+    if (cached) return res.json({ ...cached.data, cached: true, stale: true });
+    res.status(502).json({ error: e.message });
+  }
+});
+
+// GET /api/wb-suggest?q=запрос
+// Возвращает исходный запрос (suggest API заблокирован без браузерных куки)
+app.get('/api/wb-suggest', async (req, res) => {
+  const q = (req.query.q || '').trim();
+  if (!q || q.length < 2) return res.json({ suggests: [] });
+  // Просто возвращаем сам запрос — пользователь сразу видит его в списке и нажимает
+  res.json({ suggests: [q] });
+});
+
+
 
 app.get('/api/status', (req, res) => {
   res.json({

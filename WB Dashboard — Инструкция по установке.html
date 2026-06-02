@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WB Dashboard — Инструкция по установке</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap');
+
+  :root {
+    --purple: #7c3aed;
+    --purple-light: #a78bfa;
+    --bg: #0d1117;
+    --card: #161b22;
+    --border: #30363d;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --green: #3fb950;
+    --blue: #58a6ff;
+    --orange: #d29922;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #f0f2f5;
+    color: #1a1a2e;
+    line-height: 1.7;
+    padding: 40px 20px;
+  }
+
+  .page {
+    max-width: 780px;
+    margin: 0 auto;
+    background: #fff;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 8px 48px rgba(0,0,0,.12);
+  }
+
+  /* HEADER */
+  .header {
+    background: linear-gradient(135deg, #1a0533 0%, #2d1b69 50%, #1e3a5f 100%);
+    padding: 48px 52px 40px;
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+  }
+  .header::before {
+    content: '';
+    position: absolute;
+    top: -60px; right: -60px;
+    width: 220px; height: 220px;
+    background: rgba(124,58,237,.25);
+    border-radius: 50%;
+  }
+  .header::after {
+    content: '';
+    position: absolute;
+    bottom: -40px; left: 60px;
+    width: 140px; height: 140px;
+    background: rgba(56,189,248,.15);
+    border-radius: 50%;
+  }
+  .header-logo {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #a78bfa;
+    margin-bottom: 14px;
+    position: relative;
+    z-index: 1;
+  }
+  .header h1 {
+    font-size: 34px;
+    font-weight: 800;
+    line-height: 1.2;
+    margin-bottom: 12px;
+    position: relative;
+    z-index: 1;
+  }
+  .header p {
+    font-size: 15px;
+    color: rgba(255,255,255,.7);
+    max-width: 480px;
+    position: relative;
+    z-index: 1;
+  }
+  .header-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(63,185,80,.15);
+    border: 1px solid rgba(63,185,80,.3);
+    color: #3fb950;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 12px;
+    border-radius: 20px;
+    margin-top: 18px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* CONTENT */
+  .content {
+    padding: 44px 52px;
+  }
+
+  /* TIME ESTIMATE */
+  .time-block {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 40px;
+  }
+  .time-item {
+    flex: 1;
+    background: #f8f9ff;
+    border: 1px solid #e8eaf6;
+    border-radius: 12px;
+    padding: 18px 20px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .time-icon { font-size: 28px; }
+  .time-label { font-size: 11px; color: #888; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; }
+  .time-val { font-size: 18px; font-weight: 700; color: #1a1a2e; }
+
+  /* SECTION */
+  .section-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: #1a1a2e;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #f0f2f5;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section-title .num {
+    width: 32px; height: 32px;
+    background: #7c3aed;
+    color: #fff;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  /* STEPS */
+  .step {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 18px;
+    align-items: flex-start;
+  }
+  .step-dot {
+    width: 28px; height: 28px;
+    background: #f0ebff;
+    border: 2px solid #7c3aed;
+    color: #7c3aed;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .step-content { flex: 1; }
+  .step-content strong { color: #1a1a2e; }
+  .step-content p { font-size: 14px; color: #444; margin-top: 3px; }
+
+  /* CODE */
+  code {
+    font-family: 'JetBrains Mono', monospace;
+    background: #f0ebff;
+    color: #7c3aed;
+    padding: 2px 7px;
+    border-radius: 5px;
+    font-size: 13px;
+  }
+  .code-block {
+    background: #1a1a2e;
+    color: #a78bfa;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    padding: 16px 20px;
+    border-radius: 10px;
+    margin: 12px 0;
+    border-left: 3px solid #7c3aed;
+    line-height: 1.8;
+  }
+  .code-block .comment { color: #555; }
+
+  /* CALLOUT */
+  .callout {
+    display: flex;
+    gap: 14px;
+    padding: 16px 20px;
+    border-radius: 10px;
+    margin: 20px 0;
+    font-size: 14px;
+  }
+  .callout-icon { font-size: 20px; flex-shrink: 0; }
+  .callout-text strong { display: block; margin-bottom: 4px; font-size: 14px; }
+  .callout.info { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; }
+  .callout.warn { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; }
+  .callout.success { background: #f0fdf4; border: 1px solid #bbf7d0; color: #14532d; }
+  .callout.danger { background: #fef2f2; border: 1px solid #fecaca; color: #7f1d1d; }
+
+  /* DIVIDER */
+  .divider {
+    height: 1px;
+    background: #f0f2f5;
+    margin: 36px 0;
+  }
+
+  /* PERMISSIONS TABLE */
+  .perm-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin: 14px 0;
+  }
+  .perm-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #14532d;
+  }
+  .perm-item::before { content: '✓'; font-weight: 700; color: #22c55e; }
+
+  /* SCREENSHOT PLACEHOLDER */
+  .screen-placeholder {
+    background: linear-gradient(135deg, #1a0533, #2d1b69);
+    border-radius: 12px;
+    padding: 30px;
+    margin: 16px 0;
+    text-align: center;
+    color: rgba(255,255,255,.6);
+    font-size: 13px;
+    border: 1px solid #3d2a6e;
+  }
+  .screen-placeholder .screen-ui {
+    background: rgba(255,255,255,.05);
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: #a78bfa;
+    text-align: left;
+    line-height: 2;
+  }
+
+  /* FOOTER */
+  .footer {
+    background: #f8f9ff;
+    padding: 28px 52px;
+    text-align: center;
+    border-top: 1px solid #e8eaf6;
+  }
+  .footer p { font-size: 13px; color: #888; }
+  .footer a { color: #7c3aed; text-decoration: none; font-weight: 600; }
+
+  /* LINK HIGHLIGHT */
+  .link-box {
+    background: #f0ebff;
+    border: 2px solid #7c3aed;
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin: 16px 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .link-box .link-icon { font-size: 24px; }
+  .link-box .link-url {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    color: #7c3aed;
+    font-weight: 600;
+    word-break: break-all;
+  }
+  .link-box .link-label { font-size: 11px; color: #888; margin-bottom: 2px; }
+
+  @media print {
+    body { background: #fff; padding: 0; }
+    .page { box-shadow: none; border-radius: 0; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-logo">🛍️ WB Dashboard</div>
+    <h1>Инструкция<br>по установке</h1>
+    <p>Персональный дашборд для продавцов Wildberries — статистика, склады, стоимость логистики, позиции в поиске и реклама.</p>
+    <div class="header-badge">✦ Бесплатно · Работает на твоём компьютере · Данные только у тебя</div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- TIME -->
+    <div class="time-block">
+      <div class="time-item">
+        <div class="time-icon">⏱️</div>
+        <div>
+          <div class="time-label">Время установки</div>
+          <div class="time-val">5–10 минут</div>
+        </div>
+      </div>
+      <div class="time-item">
+        <div class="time-icon">💻</div>
+        <div>
+          <div class="time-label">Операционная система</div>
+          <div class="time-val">Windows 10 / 11</div>
+        </div>
+      </div>
+      <div class="time-item">
+        <div class="time-icon">🔑</div>
+        <div>
+          <div class="time-label">Нужно иметь</div>
+          <div class="time-val">Аккаунт WB</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 1 -->
+    <div class="section-title">
+      <div class="num">1</div>
+      Установи Node.js
+    </div>
+
+    <div class="step">
+      <div class="step-dot">1</div>
+      <div class="step-content">
+        <strong>Открой сайт nodejs.org</strong>
+        <p>Перейди на <code>nodejs.org/ru</code> и скачай версию <strong>LTS</strong> (рекомендуемую).</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-dot">2</div>
+      <div class="step-content">
+        <strong>Запусти установщик</strong>
+        <p>Открой скачанный файл <code>.msi</code>, нажимай «Далее» → «Далее» → «Установить». Всё по умолчанию.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-dot">3</div>
+      <div class="step-content">
+        <strong>Проверь установку</strong>
+        <p>Нажми <code>Win + R</code>, введи <code>cmd</code>, нажми Enter. В открывшемся окне введи:</p>
+        <div class="code-block">node --version</div>
+        <p>Должно появиться что-то вроде <code>v22.0.0</code> — значит всё хорошо.</p>
+      </div>
+    </div>
+
+    <div class="callout info">
+      <div class="callout-icon">ℹ️</div>
+      <div class="callout-text">
+        <strong>Node.js устанавливается один раз</strong>
+        В следующий раз при обновлении дашборда повторять не нужно.
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- STEP 2 -->
+    <div class="section-title">
+      <div class="num">2</div>
+      Скачай дашборд
+    </div>
+
+    <div class="step">
+      <div class="step-dot">1</div>
+      <div class="step-content">
+        <strong>Открой страницу на GitHub</strong>
+        <p>Перейди по ссылке:</p>
+        <div class="link-box">
+          <div class="link-icon">🔗</div>
+          <div>
+            <div class="link-label">Ссылка на дашборд</div>
+            <div class="link-url">https://github.com/tatanika/WBDashTa</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-dot">2</div>
+      <div class="step-content">
+        <strong>Скачай ZIP-архив</strong>
+        <p>Нажми зелёную кнопку <code>Code</code> → выбери <code>Download ZIP</code>.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-dot">3</div>
+      <div class="step-content">
+        <strong>Распакуй архив</strong>
+        <p>Правой кнопкой на скачанный файл → <strong>Извлечь всё</strong>. Выбери удобное место, например <code>C:\WBDashboard\</code>.</p>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- STEP 3 -->
+    <div class="section-title">
+      <div class="num">3</div>
+      Получи API-токен на Wildberries
+    </div>
+
+    <div class="callout warn">
+      <div class="callout-icon">⚠️</div>
+      <div class="callout-text">
+        <strong>Токен нужен для доступа к данным твоего магазина</strong>
+        Он хранится только на твоём компьютере и никуда не передаётся.
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-dot">1</div>
+      <div class="step-content">
+        <strong>Открой кабинет продавца</strong>
+        <p>Зайди на <code>seller.wildberries.ru</code> под своим аккаунтом.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-dot">2</div>
+      <div class="step-content">
+        <strong>Перейди в раздел API</strong>
+        <p>Нажми на своё имя (справа вверху) → <strong>Настройки</strong> → <strong>Доступ к API</strong>.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-dot">3</div>
+      <div class="step-content">
+        <strong>Создай новый токен</strong>
+        <p>Нажми <strong>«Создать новый токен»</strong>. Введи любое имя (например: «Мой дашборд»).</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-dot">4</div>
+      <div class="step-content">
+        <strong>Выбери разрешения</strong>
+        <p>Отметь галочками следующие разрешения:</p>
+        <div class="perm-grid">
+          <div class="perm-item">Контент</div>
+          <div class="perm-item">Аналитика</div>
+          <div class="perm-item">Статистика</div>
+          <div class="perm-item">Цены и скидки</div>
+          <div class="perm-item">Склад</div>
+          <div class="perm-item">Продвижение</div>
+        </div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-dot">5</div>
+      <div class="step-content">
+        <strong>Скопируй токен</strong>
+        <p>Нажми <strong>«Создать»</strong>. Токен появится один раз — скопируй его полностью (<code>Ctrl+A</code>, затем <code>Ctrl+C</code>).</p>
+      </div>
+    </div>
+
+    <div class="callout danger">
+      <div class="callout-icon">🔒</div>
+      <div class="callout-text">
+        <strong>Никому не передавай токен!</strong>
+        С ним можно читать данные твоего магазина. Если токен утёк — удали его в кабинете WB и создай новый.
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- STEP 4 -->
+    <div class="section-title">
+      <div class="num">4</div>
+      Запусти дашборд
+    </div>
+
+    <div class="step">
+      <div class="step-dot">1</div>
+      <div class="step-content">
+        <strong>Открой папку с дашбордом</strong>
+        <p>Зайди в папку, куда распаковал архив (например <code>C:\WBDashboard\WBDashTa-main\</code>).</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-dot">2</div>
+      <div class="step-content">
+        <strong>Запусти start.bat</strong>
+        <p>Дважды кликни на файл <code>start.bat</code>. Откроется чёрное окно — подожди, оно само установит зависимости при первом запуске.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-dot">3</div>
+      <div class="step-content">
+        <strong>Открой браузер</strong>
+        <p>Когда в чёрном окне появится текст <code>WB Dashboard → http://localhost:3000</code>, открой браузер и перейди по адресу:</p>
+        <div class="code-block">http://localhost:3000</div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- STEP 5 -->
+    <div class="section-title">
+      <div class="num">5</div>
+      Введи токен в дашборде
+    </div>
+
+    <div class="step">
+      <div class="step-dot">1</div>
+      <div class="step-content">
+        <strong>Экран первого запуска</strong>
+        <p>При первом открытии ты увидишь экран настройки вместо карточек товаров — это нормально.</p>
+      </div>
+    </div>
+
+    <div class="screen-placeholder">
+      <div class="screen-ui">
+        🛍️ WB Dashboard — Первый запуск<br><br>
+        API-токен Wildberries:<br>
+        ┌─────────────────────────────────────┐<br>
+        │ eyJhbGciOiJFUzI1NiIsImtpZCI6Ij...  │<br>
+        └─────────────────────────────────────┘<br><br>
+        [ ✅ Подключить магазин ]
+      </div>
+      Так выглядит экран настройки при первом запуске
+    </div>
+
+    <div class="step">
+      <div class="step-dot">2</div>
+      <div class="step-content">
+        <strong>Вставь токен</strong>
+        <p>Кликни в поле ввода и нажми <code>Ctrl+V</code> — вставь токен, который скопировал на шаге 3.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-dot">3</div>
+      <div class="step-content">
+        <strong>Нажми «Подключить магазин»</strong>
+        <p>Дашборд проверит токен и начнёт загружать данные. Первая загрузка занимает 1–2 минуты.</p>
+      </div>
+    </div>
+
+    <div class="callout success">
+      <div class="callout-icon">🎉</div>
+      <div class="callout-text">
+        <strong>Готово! Дашборд настроен.</strong>
+        Теперь каждый раз просто запускай start.bat и открывай http://localhost:3000 — всё будет работать автоматически.
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- DAILY USE -->
+    <div class="section-title">
+      <div class="num" style="background:#059669">→</div>
+      Как пользоваться каждый день
+    </div>
+
+    <div class="step">
+      <div class="step-dot" style="border-color:#059669;color:#059669;background:#f0fdf4">▶</div>
+      <div class="step-content">
+        <strong>Запуск</strong>
+        <p>Двойной клик на <code>start.bat</code> → открыть браузер → <code>http://localhost:3000</code></p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-dot" style="border-color:#059669;color:#059669;background:#f0fdf4">🚚</div>
+      <div class="step-content">
+        <strong>Обновляй ИЛ и ИРП каждый понедельник</strong>
+        <p>Нажми кнопку <strong>«🚚 Логистика»</strong> в верхней панели и введи актуальные значения из раздела <strong>Поставки и заказы → Тарифы</strong> в кабинете WB. Дашборд напомнит сам, когда значения устареют.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-dot" style="border-color:#059669;color:#059669;background:#f0fdf4">■</div>
+      <div class="step-content">
+        <strong>Завершение работы</strong>
+        <p>Просто закрой чёрное окно (или нажми <code>Ctrl+C</code> в нём) и закрой браузер.</p>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- FAQ -->
+    <div class="section-title">
+      <div class="num" style="background:#d97706">?</div>
+      Частые вопросы
+    </div>
+
+    <div style="margin-bottom:16px">
+      <strong style="color:#1a1a2e">❓ Чёрное окно открылось и сразу закрылось</strong>
+      <p style="font-size:14px;color:#555;margin-top:4px">Убедись, что Node.js установлен. Попробуй запустить <code>start.bat</code> правой кнопкой → <em>«Запустить от имени администратора»</em>.</p>
+    </div>
+    <div style="margin-bottom:16px">
+      <strong style="color:#1a1a2e">❓ Данные долго загружаются</strong>
+      <p style="font-size:14px;color:#555;margin-top:4px">Первый запуск или нажатие «Обновить» занимает 30–60 секунд — WB API имеет ограничение на скорость запросов. Это нормально.</p>
+    </div>
+    <div style="margin-bottom:16px">
+      <strong style="color:#1a1a2e">❓ Токен не принимается (ошибка 401)</strong>
+      <p style="font-size:14px;color:#555;margin-top:4px">Убедись что токен скопирован полностью — он очень длинный (несколько сотен символов). Попробуй создать новый токен в кабинете WB.</p>
+    </div>
+    <div style="margin-bottom:16px">
+      <strong style="color:#1a1a2e">❓ Сайт не открывается по адресу localhost:3000</strong>
+      <p style="font-size:14px;color:#555;margin-top:4px">Проверь что чёрное окно запущено и не закрыто. Попробуй другой браузер. Антивирус иногда блокирует локальный сервер — добавь папку в исключения.</p>
+    </div>
+
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <p>WB Dashboard · <a href="https://github.com/tatanika/WBDashTa">github.com/tatanika/WBDashTa</a></p>
+    <p style="margin-top:6px;font-size:12px">Дашборд работает полностью локально на вашем компьютере. Никакие данные не передаются на сторонние серверы.</p>
+  </div>
+
+</div>
+</body>
+</html>

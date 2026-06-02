@@ -1,0 +1,14 @@
+{
+  "name": "wb-dash",
+  "version": "1.0.0",
+  "description": "WB Dashboard — аналог Bider",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "https-proxy-agent": "^9.0.0",
+    "node-fetch": "^2.7.0"
+  }
+}

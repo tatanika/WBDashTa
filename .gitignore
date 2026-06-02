@@ -1,0 +1,26 @@
+﻿# Node.js
+node_modules/
+
+# Личные токены и данные — НИКОГДА не коммитить!
+config.js
+wb_token.json
+seller_session.json
+custom_names.json
+keyword_queries.json
+logistics_settings.json
+wh_names.txt
+
+# Профиль браузера CDP (Яндекс Браузер для поиска позиций)
+.browser-cdp-profile/
+
+# Тестовые скрипты и наработки разработки
+test_*.js
+probe_*.js
+*.md
+SESSION_NOTES.md
+SPP_FIX_PLAN.md
+
+# Временные файлы
+*.log
+.DS_Store
+Thumbs.db

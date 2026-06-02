@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WB Dashboard</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="stylesheet" href="style.css?v=25">
+</head>
+<body>
+
+<!-- LOADER -->
+<div id="loader">
+  <div class="loader-spinner"></div>
+  <div id="loader-status">Загружаем данные с Wildberries…</div>
+  <p>Это займёт около 30–60 секунд</p>
+</div>
+
+<!-- SETUP SCREEN (показывается если нет API-токена) -->
+<div id="setup-screen" class="hidden">
+  <div class="setup-card">
+    <div class="setup-logo">🛍️ <span>WB Dashboard</span></div>
+    <h1 class="setup-title">Первый запуск</h1>
+    <p class="setup-desc">Вставь API-токен из кабинета Wildberries — дашборд подключится к твоему магазину и загрузит все данные автоматически.</p>
+
+    <div class="setup-steps">
+      <div class="setup-step">
+        <span class="step-num">1</span>
+        <span>Открой <b>seller.wildberries.ru</b></span>
+      </div>
+      <div class="setup-step">
+        <span class="step-num">2</span>
+        <span>Настройки → Доступ к API → <b>Создать новый токен</b></span>
+      </div>
+      <div class="setup-step">
+        <span class="step-num">3</span>
+        <span>Выбери разрешения: <b>Контент, Аналитика, Статистика, Цены, Склад, Продвижение</b></span>
+      </div>
+      <div class="setup-step">
+        <span class="step-num">4</span>
+        <span>Скопируй токен и вставь ниже</span>
+      </div>
+    </div>
+
+    <div class="setup-input-wrap">
+      <label class="setup-label">API-токен Wildberries</label>
+      <textarea id="setup-token-input" rows="4" placeholder="eyJhbGciOiJFUzI1NiIs… (вставь весь токен целиком)"></textarea>
+      <div id="setup-error" class="setup-error hidden"></div>
+    </div>
+
+    <button id="setup-save-btn" class="setup-btn">
+      <span id="setup-btn-text">✅ Подключить магазин</span>
+      <div id="setup-btn-spinner" class="setup-spinner hidden"></div>
+    </button>
+
+    <p class="setup-note">🔒 Токен сохраняется только на твоём компьютере в файле <code>wb_token.json</code> — никуда не передаётся.</p>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<!-- TOPBAR -->
+<div id="topbar">
+  <div class="logo">WB <span>Dashboard</span></div>
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="cards">📦 Карточки</button>
+    <button class="tab-btn" data-tab="regions">🗺 Остатки по регионам</button>
+    <button class="tab-btn" data-tab="search">🔍 Поиск WB</button>
+    <button class="tab-btn" data-tab="ads">📣 Реклама</button>
+  </div>
+  <div class="topbar-right">
+    <span id="updated-label">—</span>
+    <button id="spp-session-btn" title="Настроить сессию для получения реальной СПП с портала WB">🔑 СПП</button>
+    <button id="logistics-settings-btn" class="logistics-btn" title="Настроить ИЛ и ИРП для расчёта стоимости логистики">🚚 Логистика</button>
+    <button id="refresh-btn">
+      <span class="spin-icon">↻</span> Обновить
+    </button>
+  </div>
+</div>
+
+<!-- TOOLBAR (cards tab only) -->
+<div id="toolbar">
+  <label>Категория:</label>
+  <select id="cat-filter"><option value="">Все</option></select>
+  <label>Поиск:</label>
+  <input id="search" type="text" placeholder="Артикул, название…">
+  <label>Сортировка:</label>
+  <select id="sort-select">
+    <option value="orders-desc" selected>Заказы ↓ (30 дн.)</option>
+    <option value="orders-asc">Заказы ↑</option>
+    <option value="views-desc">Просмотры ↓</option>
+    <option value="stock-desc">Остаток ↓</option>
+    <option value="stock-asc">Остаток ↑</option>
+    <option value="finalPrice-desc">Цена ↓</option>
+    <option value="finalPrice-asc">Цена ↑</option>
+    <option value="vendorCode-asc">Артикул ↑</option>
+    <option value="vendorCode-desc">Артикул ↓</option>
+    <option value="category-asc">Категория</option>
+  </select>
+  <button id="show-inactive-btn">📦 Старые товары</button>
+  <div class="count-badge" id="count-badge">0 товаров</div>
+</div>
+
+<!-- MAIN -->
+<div id="main">
+
+  <!-- ── CARDS TAB ── -->
+  <div class="tab-pane active" id="tab-cards">
+    <div id="table-wrap">
+      <table id="cards-table">
+        <thead>
+          <tr>
+            <th class="photo-cell">Фото</th>
+            <th data-sort="vendorCode">Артикул / Категория</th>
+            <th data-sort="color">Цвет</th>
+            <th data-sort="finalPrice">Цена / СПП</th>
+            <th data-sort="stock">Остаток</th>
+            <th>Клики / Корзина / Заказы</th>
+            <th>Реклама</th>
+          </tr>
+        </thead>
+        <tbody id="cards-tbody"></tbody>
+      </table>
+    </div>
+
+    <!-- RESIZE HANDLE -->
+    <div id="panel-resize-handle" title="Потяни чтобы изменить размер"></div>
+
+    <!-- BOTTOM PANEL -->
+    <div id="bottom-panel">
+      <div id="panel-header">
+        <div id="panel-title">
+          <span class="pi">📊</span>
+          <span id="panel-title-text">Весь магазин — По дням</span>
+        </div>
+        <button id="back-btn">← Весь магазин</button>
+        <div id="panel-view-tabs" class="hidden">
+          <button class="panel-tab-btn active" data-panel="stats">📅 По дням</button>
+          <button class="panel-tab-btn" data-panel="queries">🔍 Позиции</button>
+        </div>
+        <div id="panel-days-selector">
+          <select id="days-select">
+            <option value="7">7 дней</option>
+            <option value="14" selected>14 дней</option>
+            <option value="30">30 дней</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Двухколоночный контент -->
+      <div id="panel-body">
+        <!-- Левая колонка: заказы по датам -->
+        <div id="panel-left">
+          <div id="stats-scroll">
+            <table id="stats-table">
+              <thead>
+                <tr>
+                  <th>Дата</th>
+                  <th>Заказы</th>
+                  <th>Выкуп</th>
+                  <th>Отказ</th>
+                  <th>Оборот</th>
+                </tr>
+              </thead>
+              <tbody id="stats-tbody">
+                <tr><td colspan="5" id="no-stats">Загрузка…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Вертикальный разделитель (перетаскиваемый) -->
+        <div id="panel-col-divider" title="Потяни чтобы изменить ширину"></div>
+
+        <!-- Правая колонка: склады -->
+        <div id="panel-right">
+          <div id="warehouses-scroll">
+            <div id="warehouses-title">📦 Остатки по складам</div>
+            <div id="warehouses-list"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Панель позиций в поиске (скрыта по умолчанию) -->
+      <div id="panel-queries" class="hidden">
+        <div id="pos-toolbar">
+          <input id="pos-query-input" type="text" placeholder="Введи запрос и нажми Enter или ＋" autocomplete="off">
+          <button id="pos-add-btn" title="Добавить запрос">＋</button>
+          <button id="pos-check-btn" title="Проверить все позиции">🔍 Проверить</button>
+          <span id="pos-status"></span>
+        </div>
+        <div id="queries-loading" class="queries-loading hidden">
+          <div class="loader-spinner small"></div>
+          <span id="pos-loading-text">Проверяем позиции…</span>
+        </div>
+        <div id="queries-empty" class="queries-empty hidden">
+          <span>Добавь запросы выше и нажми «🔍 Проверить»</span>
+        </div>
+        <div id="queries-table-wrap" class="hidden">
+          <table id="queries-table">
+            <thead>
+              <tr>
+                <th class="q-rank">#</th>
+                <th class="q-keyword">Поисковый запрос</th>
+                <th class="q-num">Позиция</th>
+                <th class="q-num">WB Заказы</th>
+                <th class="q-num">Дата</th>
+                <th class="q-del"></th>
+              </tr>
+            </thead>
+            <tbody id="queries-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── REGIONS TAB ── -->
+  <div class="tab-pane" id="tab-regions">
+    <div id="regions-toolbar">
+      <button id="regions-collapse-btn" title="Свернуть все раскрытые товары">Свернуть всё</button>
+      <span class="regions-sort-divider"></span>
+      <span class="regions-sort-label">Сортировка:</span>
+      <button class="regions-sort-btn active" data-sort="vendorCode">🔢 Артикул</button>
+      <button class="regions-sort-btn" data-sort="stock">📦 Остаток ↓</button>
+      <button class="regions-sort-btn" data-sort="orders">🛒 Заказы ↓</button>
+      <span class="regions-sort-divider"></span>
+      <button class="regions-sort-btn" data-sort="r_Центральный">📍 Центральный</button>
+      <button class="regions-sort-btn" data-sort="r_Приволжский">📍 Приволжский</button>
+      <button class="regions-sort-btn" data-sort="r_Южный">📍 Южный</button>
+      <span class="regions-sort-divider"></span>
+      <input id="regions-search" type="text" placeholder="Артикул…" autocomplete="off">
+    </div>
+    <div id="regions-wrap">
+      <table id="regions-table">
+        <thead id="regions-thead"></thead>
+        <tbody id="regions-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── SEARCH TAB ── -->
+  <div class="tab-pane" id="tab-search">
+    <div id="search-tab-container">
+      <!-- Левая панель: поиск + список запросов -->
+      <div id="search-left-panel">
+        <div id="search-input-wrap">
+          <input id="search-freq-input" type="text" placeholder="Введи запрос, например: панно на стену" autocomplete="off">
+          <div id="search-interval-btns">
+            <button class="search-interval-btn active" data-interval="yesterday">Вчера</button>
+            <button class="search-interval-btn" data-interval="week">Неделя</button>
+            <button class="search-interval-btn" data-interval="month">Месяц</button>
+          </div>
+        </div>
+        <div id="search-freq-loading" class="hidden">
+          <div class="loader-spinner small"></div>
+          <span>Ищем запросы…</span>
+        </div>
+        <div id="search-freq-empty">
+          <div class="search-empty-icon">🔍</div>
+          <p>Введи запрос и нажми Enter</p>
+          <p class="search-empty-hint">Покажем частотность поисковых запросов на Wildberries</p>
+        </div>
+        <div id="search-freq-list" class="hidden"></div>
+        <div id="search-freq-label-wrap" class="hidden">
+          <label class="search-own-label">
+            <input type="checkbox" id="search-own-check"> Свои товары
+          </label>
+        </div>
+      </div>
+      <!-- Правая панель: детали по выбранному запросу -->
+      <div id="search-right-panel">
+        <div id="search-detail-empty">
+          <div class="search-empty-icon">👈</div>
+          <p>Выбери запрос слева</p>
+          <p class="search-empty-hint">Увидишь свои товары и их позиции</p>
+        </div>
+        <div id="search-detail-content" class="hidden">
+          <div id="search-detail-header">
+            <div id="search-detail-query"></div>
+            <div id="search-detail-freq"></div>
+          </div>
+          <div id="search-detail-loading" class="hidden">
+            <div class="loader-spinner small"></div>
+            <span>Загружаем данные о товарах…</span>
+          </div>
+          <div id="search-detail-products"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── ADS TAB ── -->
+  <div class="tab-pane" id="tab-ads">
+    <div id="ads-toolbar">
+      <span class="ads-period-label">Период:</span>
+      <div class="ads-period-btns">
+        <button class="ads-period-btn active" data-days="7">7 дн.</button>
+        <button class="ads-period-btn" data-days="14">14 дн.</button>
+        <button class="ads-period-btn" data-days="30">30 дн.</button>
+      </div>
+      <button id="ads-refresh-btn" title="Обновить данные рекламы">
+        <span class="spin-icon">↻</span> Обновить
+      </button>
+      <span id="ads-updated-label"></span>
+    </div>
+
+    <!-- Пустое состояние (нет кампаний) -->
+    <div id="ads-empty" class="ads-empty hidden">
+      <div class="ads-empty-icon">📣</div>
+      <h3>Рекламных кампаний пока нет</h3>
+      <p>Всё готово к запуску. Как только кампания запустится —<br>данные появятся здесь автоматически.</p>
+      <div class="ads-launch-hint">🗓 Запуск запланирован: <strong>3 мая 2026</strong></div>
+    </div>
+
+    <!-- Ошибка загрузки -->
+    <div id="ads-error" class="ads-empty hidden">
+      <div class="ads-empty-icon">⚠️</div>
+      <h3>Не удалось загрузить данные</h3>
+      <p id="ads-error-text"></p>
+    </div>
+
+    <!-- Загрузка -->
+    <div id="ads-loading" class="ads-loading hidden">
+      <div class="loader-spinner"></div>
+      <span>Загружаем рекламную статистику…</span>
+    </div>
+
+    <!-- Таблица кампаний -->
+    <div id="ads-table-wrap" class="hidden">
+      <table id="ads-table">
+        <thead>
+          <tr>
+            <th class="ads-expand-col"></th>
+            <th class="ads-name-col">Кампания</th>
+            <th>Тип</th>
+            <th>Статус</th>
+            <th class="ads-num-col">Показы</th>
+            <th class="ads-num-col">Клики</th>
+            <th class="ads-num-col">CTR</th>
+            <th class="ads-num-col">Расход</th>
+            <th class="ads-num-col">CPC</th>
+            <th class="ads-num-col">Заказы</th>
+          </tr>
+        </thead>
+        <tbody id="ads-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script src="app.js?v=25"></script>
+
+<!-- SESSION MODAL -->
+<div id="session-modal" class="modal-overlay hidden">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>🔑 Сессия портала WB — реальная СПП</h3>
+      <button id="session-close-btn" class="modal-close">✕</button>
+    </div>
+    <p class="modal-hint">Открой <b>seller.wildberries.ru → Цены и скидки</b>, затем DevTools → Network → найди запрос <code>filter</code> → <b>Copy as fetch</b> и вставь ниже два значения из заголовков.</p>
+    <div id="session-status-bar"></div>
+    <label class="modal-label">authorizev3 <span class="modal-badge">из Request Headers</span></label>
+    <textarea id="inp-authorizev3" rows="3" placeholder="eyJhbGci… (заголовок authorizev3 из запроса filter)"></textarea>
+    <label class="modal-label">wbx-refresh <span class="modal-badge modal-badge-green">живёт до июля 2026</span></label>
+    <textarea id="inp-wbxRefresh" rows="3" placeholder="eyJhbGci… (кука wbx-refresh из DevTools → Application → Cookies → .seller-auth.wildberries.ru)"></textarea>
+    <details class="modal-details">
+      <summary>Дополнительные куки (необязательно)</summary>
+      <label class="modal-label">wbx-validation-key</label>
+      <input id="inp-wbxValidationKey" type="text" placeholder="98b01840-43dd-...">
+      <label class="modal-label">cfidsw-wb</label>
+      <input id="inp-cfidsWb" type="text" placeholder="0tRR2S...">
+      <label class="modal-label">__zzatw-wb</label>
+      <input id="inp-zzatwWb" type="text" placeholder="MDA0dC0...">
+    </details>
+    <div class="modal-actions">
+      <button id="session-save-btn" class="btn-primary">💾 Сохранить сессию</button>
+      <button id="session-refresh-auth-btn" class="btn-secondary">🔄 Авто-обновить токен</button>
+    </div>
+  </div>
+</div>
+
+<!-- LOGISTICS SETTINGS MODAL -->
+<div id="logistics-modal" class="modal-overlay hidden">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>🚚 Стоимость логистики — настройки</h3>
+      <button id="logistics-close-btn" class="modal-close">✕</button>
+    </div>
+    <p class="modal-hint">
+      Открой <b>ЛК WB — Поставки и заказы → Тарифы</b> и скопируй текущие значения.<br>
+      Обновляй каждый <b>понедельник</b> — WB меняет эти параметры еженедельно.
+    </p>
+    <div id="logistics-status-bar"></div>
+
+    <div class="logistics-inputs">
+      <div class="logistics-field">
+        <label class="modal-label">
+          ИЛ — Индекс локализации
+          <span class="modal-badge">например: 1.22</span>
+        </label>
+        <input id="inp-il" type="number" step="0.01" min="0" max="5" placeholder="1.22">
+        <span class="logistics-hint">Коэффициент индекса локализации (например 1.22)</span>
+      </div>
+      <div class="logistics-field">
+        <label class="modal-label">
+          ИРП — Индекс распределения продаж
+          <span class="modal-badge">например: 1.75</span>
+        </label>
+        <input id="inp-irp" type="number" step="0.01" min="0" max="20" placeholder="1.75">
+        <span class="logistics-hint">Процент от цены товара (в %, например 1.75)</span>
+      </div>
+    </div>
+
+    <div class="logistics-formula">
+      <div class="formula-title">📝 Формула расчёта:</div>
+      <code>(База + Доп.литр × (Литры−1)) × ИЛ + Цена × (ИРП / 100)</code>
+      <span class="formula-note">База и доп. литр уже с коэффициентом склада (из WB API)</span>
+    </div>
+
+    <div class="modal-actions">
+      <button id="logistics-save-btn" class="btn-primary">💾 Сохранить</button>
+      <button id="logistics-close-btn2" class="btn-secondary">Отмена</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
